@@ -6,13 +6,8 @@ import org.gradle.api.artifacts.transform.ArtifactTransform
 import org.gradle.api.artifacts.type.ArtifactTypeDefinition
 import org.gradle.api.internal.artifacts.ArtifactAttributes.ARTIFACT_FORMAT
 import org.gradle.api.plugins.JavaBasePlugin
-import org.gradle.api.plugins.JavaPluginConvention
-import org.gradle.api.tasks.SourceSet
-import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.kotlin.dsl.dependencies
-import org.gradle.kotlin.dsl.get
 import org.gradle.kotlin.dsl.getByType
-import org.gradle.kotlin.dsl.the
 import org.gradle.plugins.ide.idea.IdeaPlugin
 import org.gradle.plugins.ide.idea.model.IdeaModel
 import java.io.File
@@ -36,26 +31,26 @@ class Aar2Jar : Plugin<Project> {
 
         val compileOnlyAar = project.configurations.register("compileOnlyAar")
         val implementationAar = project.configurations.register("implementationAar")
-        val sourceSets = project.the<JavaPluginConvention>().sourceSets
 
         compileOnlyAar.configure {
-            isTransitive = false
             attributes {
                 attribute(ARTIFACT_FORMAT, ArtifactTypeDefinition.JAR_TYPE)
             }
-            sourceSets.withName("main") {
-                compileClasspath += this@configure
+            project.afterEvaluate {
+                forEach { jarFile ->
+                    project.dependencies.add("compileOnly", project.files(jarFile))
+                }
             }
         }
 
         implementationAar.configure {
-            isTransitive = false
             attributes {
                 attribute(ARTIFACT_FORMAT, ArtifactTypeDefinition.JAR_TYPE)
             }
-            sourceSets.withName("main") {
-                compileClasspath += this@configure
-                runtimeClasspath += this@configure
+            project.afterEvaluate {
+                forEach { jarFile ->
+                    project.dependencies.add("implementation", project.files(jarFile))
+                }
             }
         }
 
@@ -70,10 +65,6 @@ class Aar2Jar : Plugin<Project> {
                 }
 
     }
-}
-
-fun SourceSetContainer.withName(name: String, f: SourceSet.() -> Unit) {
-    this[name]?.apply { f(this) } ?: whenObjectAdded { if (this.name == name) f(this) }
 }
 
 class AarToJarTransform : ArtifactTransform() {

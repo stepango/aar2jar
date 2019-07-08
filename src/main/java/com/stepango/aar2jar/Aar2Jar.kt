@@ -44,19 +44,19 @@ class Aar2Jar : Plugin<Project> {
                     ?.apply {
                         add(testImplementationAar.get())
                         add(testCompileOnlyAar.get())
-                    } ?: throw IllegalArgumentException()
+                    }
 
             scopes.filter { (s, _) -> s != "TEST" }
                     .forEach {
                         it.value["plus"]?.apply {
                             add(compileOnlyAar.get())
-                        } ?: throw IllegalArgumentException()
+                        }
                     }
 
             scopes.forEach {
                         it.value["plus"]?.apply {
                             add(implementationAar.get())
-                        } ?: throw IllegalArgumentException()
+                        }
                     }
         }
 

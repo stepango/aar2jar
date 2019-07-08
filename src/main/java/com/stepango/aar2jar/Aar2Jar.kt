@@ -2,6 +2,7 @@ package com.stepango.aar2jar
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.transform.ArtifactTransform
 import org.gradle.api.artifacts.type.ArtifactTypeDefinition
 import org.gradle.api.internal.artifacts.ArtifactAttributes.ARTIFACT_FORMAT
@@ -17,14 +18,47 @@ import org.gradle.plugins.ide.idea.IdeaPlugin
 import org.gradle.plugins.ide.idea.model.IdeaModel
 import java.io.File
 import java.io.FileOutputStream
+import java.lang.IllegalArgumentException
 import java.util.zip.ZipFile
 
 class Aar2Jar : Plugin<Project> {
 
     override fun apply(project: Project) {
 
-        project.pluginManager.apply(IdeaPlugin::class.java)
-        project.pluginManager.apply(JavaBasePlugin::class.java)
+        val compileOnlyAar = project.configurations.register("compileOnlyAar")
+        val implementationAar = project.configurations.register("implementationAar")
+
+        // Assume all modules have test configuration
+        val testCompileOnlyAar = project.configurations.register("testCompileOnlyAar")
+        val testImplementationAar = project.configurations.register("testImplementationAar")
+
+        project.pluginManager.withPlugin("idea") {
+
+            val scopes = project.extensions
+                    .getByType<IdeaModel>()
+                    .module
+                    .scopes
+
+            scopes["TEST"]
+                    ?.get("plus")
+                    ?.apply {
+                        add(testImplementationAar.get())
+                        add(testCompileOnlyAar.get())
+                    } ?: throw IllegalArgumentException()
+
+            scopes.filter { (s, _) -> s != "TEST" }
+                    .forEach {
+                        it.value["plus"]?.apply {
+                            add(compileOnlyAar.get())
+                        } ?: throw IllegalArgumentException()
+                    }
+
+            scopes.forEach {
+                        it.value["plus"]?.apply {
+                            add(implementationAar.get())
+                        } ?: throw IllegalArgumentException()
+                    }
+        }
 
         project.dependencies {
             registerTransform {
@@ -34,41 +68,43 @@ class Aar2Jar : Plugin<Project> {
             }
         }
 
-        val compileOnlyAar = project.configurations.register("compileOnlyAar")
-        val implementationAar = project.configurations.register("implementationAar")
-        val sourceSets = project.the<JavaPluginConvention>().sourceSets
-
         compileOnlyAar.configure {
-            isTransitive = false
-            attributes {
-                attribute(ARTIFACT_FORMAT, ArtifactTypeDefinition.JAR_TYPE)
-            }
-            sourceSets.withName("main") {
+            baseConfiguration(project, "main") {
                 compileClasspath += this@configure
             }
         }
 
         implementationAar.configure {
-            isTransitive = false
-            attributes {
-                attribute(ARTIFACT_FORMAT, ArtifactTypeDefinition.JAR_TYPE)
-            }
-            sourceSets.withName("main") {
+            baseConfiguration(project, "main") {
                 compileClasspath += this@configure
                 runtimeClasspath += this@configure
             }
         }
 
-        project.extensions
-                .getByType<IdeaModel>()
-                .module
-                .scopes["PROVIDED"]
-                ?.get("plus")
-                ?.apply {
-                    add(implementationAar.get())
-                    add(compileOnlyAar.get())
-                }
+        testCompileOnlyAar.configure {
+            baseConfiguration(project, "test") {
+                compileClasspath += this@configure
+            }
+        }
 
+        testImplementationAar.configure {
+            baseConfiguration(project, "test") {
+                compileClasspath += this@configure
+                runtimeClasspath += this@configure
+            }
+        }
+
+    }
+}
+
+fun Configuration.baseConfiguration(project: Project, name: String, f: SourceSet.() -> Unit) {
+    isTransitive = false
+    attributes {
+        attribute(ARTIFACT_FORMAT, ArtifactTypeDefinition.JAR_TYPE)
+    }
+    project.pluginManager.withPlugin("java") {
+        val sourceSets = project.the<JavaPluginConvention>().sourceSets
+        sourceSets.withName(name, f)
     }
 }
 

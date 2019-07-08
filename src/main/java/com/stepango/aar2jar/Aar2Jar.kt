@@ -46,16 +46,10 @@ class Aar2Jar : Plugin<Project> {
                         add(testCompileOnlyAar.get())
                     }
 
-            scopes.filter { (s, _) -> s != "TEST" }
-                    .forEach {
-                        it.value["plus"]?.apply {
-                            add(compileOnlyAar.get())
-                        }
-                    }
-
             scopes.forEach {
                         it.value["plus"]?.apply {
                             add(implementationAar.get())
+                            add(compileOnlyAar.get())
                         }
                     }
         }

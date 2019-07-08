@@ -21,7 +21,7 @@ dependencies {
 	testImplementationAar "com.android.support:support-annotations:28.0.0" // <- Use any AAR dependencies
 }
 ```
-Make sure you have this dependency in any of your other modules `build.gradle`
+If using `compileOnlyAar` dependencies - make sure you have this dependency in any of your other modules `build.gradle`
 
 ```
 implementation "com.android.support:support-annotations:28.0.0"

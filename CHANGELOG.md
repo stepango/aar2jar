@@ -1,3 +1,6 @@
+# Version 0.6
+
+- Test configurations added
 
 # Version 0.5.1
 

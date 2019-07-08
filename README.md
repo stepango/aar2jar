@@ -6,13 +6,19 @@ How to use: add following lines in your module's `build.gradle` file
 ```
 plugins {
 	id 'kotlin'
-	id 'com.stepango.aar2jar' version “0.5.1” // <- this one
+	id 'com.stepango.aar2jar' version “0.6” // <- this one
 }
 
 
 dependencies {
 	implementation Libs.kotlin
 	compileOnlyAar "com.android.support:support-annotations:28.0.0" // <- Use any AAR dependencies
+	// or
+	implementationAar "com.android.support:support-annotations:28.0.0" // <- Use any AAR dependencies
+	// or
+	testCompileOnlyAar "com.android.support:support-annotations:28.0.0" // <- Use any AAR dependencies
+	// or
+	testImplementationAar "com.android.support:support-annotations:28.0.0" // <- Use any AAR dependencies
 }
 ```
 Make sure you have this dependency in any of your other modules `build.gradle`
